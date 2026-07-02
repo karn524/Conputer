@@ -1,10 +1,10 @@
-mod cpu;
-mod memory;
+mod emulator;
 mod assembler;
 
-use cpu::CPU;
-use memory::Memory;
-use assembler::{
+use emulator::cpu::CPU;
+use emulator::memory::Memory;
+
+use assembler::emit::{
     LabelTable,
     emit_loadi,
     emit_sub,
