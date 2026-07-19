@@ -25,8 +25,6 @@ use assembler::emit::{
     emit_ret,
     emit_int,
     emit_iret,
-    emit_enter,
-    emit_leave,
     emit_hlt,
     assemble_source,
     resolve_patches,
@@ -42,19 +40,22 @@ fn main() {
 
     // true  → C風コンパイラのテスト
     // false → CPU命令テスト
-    let use_compiler_test = false;
-    let use_assembler_text_test = true;
+    let use_compiler_test = true;
+    let use_assembler_text_test = false;
 
     if use_compiler_test {
         let source_c = "
-    int a;
-    int b;
-    a = 3;
-    b = 1;
-    a = a + b;
-    a = a - b;
-    store a, 400;
-    ";
+        int a;
+        int b;
+
+        a = 123;
+        push a;
+
+        a = 0;
+        pop b;
+
+        store b, 400;
+        ";
 
         let asm_source = compiler::simple_c::compile_to_assembly(source_c);
 
@@ -75,16 +76,16 @@ fn main() {
         resolve_patches(&mut memory, &labels, &patches);
     } else if use_assembler_text_test {
             let source = "
-        CALL func
-        LOADI R7, 777
-        HLT
+            CALL func
+            LOADI R7, 777
+            HLT
 
-        func:
-        ENTER
-        LOADI R0, 123
-        LEAVE
-        RET
-        ";
+            func:
+            ENTER
+            LOADI R0, 123
+            LEAVE
+            RET
+            ";
             let mut labels = LabelTable::new();
             let mut patches: Vec<Patch> = Vec::new();
 
@@ -99,14 +100,18 @@ fn main() {
             resolve_patches(&mut memory, &labels, &patches);
     } else {
         
-        let use_carry_test = true;
+        let use_carry_test = false;
 
         let use_normal_cpu_test = false;
 
         if use_carry_test {
+            // Phase 12.5：SUB の OF テスト
+            // 2147483647 - 4294967295
+            // 符号付き整数としては 2147483647 - (-1)
+            // 正 - 負 = 負 になるので OF = true
 
-            emit_loadi(&mut memory, &mut pos, 0, 0);
-            emit_loadi(&mut memory, &mut pos, 1, 1);
+            emit_loadi(&mut memory, &mut pos, 0, 2_147_483_647);
+            emit_loadi(&mut memory, &mut pos, 1, 4_294_967_295);
 
             emit_sub(&mut memory, &mut pos, 0, 1);
 

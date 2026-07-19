@@ -390,7 +390,98 @@ pub fn compile_to_assembly(source: &str) -> String {
             continue;
         }
 
-                // store a, 400;
+        // move b, a;
+        // のようなコピー処理をアセンブリに変換する
+        if line.starts_with("move ") {
+            let line_without_semicolon = line
+                .trim_start_matches("move ")
+                .trim_end_matches(";")
+                .trim();
+
+            let parts: Vec<&str> = line_without_semicolon.split(",").collect();
+
+            if parts.len() != 2 {
+                panic!("Invalid move statement: {}", line);
+            }
+
+            let dst_name = parts[0].trim();
+            let src_name = parts[1].trim();
+
+            let dst = get_register(&variables, dst_name);
+            let src = get_register(&variables, src_name);
+
+            assembly.push_str(&format!("MOV R{}, R{}\n", dst, src));
+
+            println!("generate assembly: MOV R{}, R{}", dst, src);
+
+            continue;
+        }
+
+        // load a, 400;
+        // のような読み込み処理をアセンブリに変換する
+        if line.starts_with("load ") {
+            let line_without_semicolon = line
+                .trim_start_matches("load ")
+                .trim_end_matches(";")
+                .trim();
+
+            let parts: Vec<&str> = line_without_semicolon.split(",").collect();
+
+            if parts.len() != 2 {
+                panic!("Invalid load statement: {}", line);
+            }
+
+            let name = parts[0].trim();
+
+            let address: u32 = parts[1]
+                .trim()
+                .parse()
+                .expect("Invalid address");
+
+            let reg = get_register(&variables, name);
+
+            assembly.push_str(&format!("LOAD R{}, {}\n", reg, address));
+
+            println!("generate assembly: LOAD R{}, {}", reg, address);
+
+            continue;
+        }
+
+        // push a;
+        // のようなスタック保存処理をアセンブリに変換する
+        if line.starts_with("push ") {
+            let name = line
+                .trim_start_matches("push ")
+                .trim_end_matches(";")
+                .trim();
+
+            let reg = get_register(&variables, name);
+
+            assembly.push_str(&format!("PUSH R{}\n", reg));
+
+            println!("generate assembly: PUSH R{}", reg);
+
+            continue;
+        }
+
+        // pop b;
+        // のようなスタック復元処理をアセンブリに変換する
+        if line.starts_with("pop ") {
+            let name = line
+                .trim_start_matches("pop ")
+                .trim_end_matches(";")
+                .trim();
+
+            let reg = get_register(&variables, name);
+
+            assembly.push_str(&format!("POP R{}\n", reg));
+
+            println!("generate assembly: POP R{}", reg);
+
+            continue;
+        }
+        
+        // store a, 400;
         // のような保存処理をアセンブリに変換する
         if line.starts_with("store ") {
             let line_without_semicolon = line

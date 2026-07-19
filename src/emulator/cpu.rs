@@ -205,9 +205,6 @@ impl CPU {
             }
 
             ADD => {
-                // ADD R3, R1
-                // R3 = R3 + R1
-                // [ADD][dst][src]
                 let dst = self.fetch_u8(memory);
                 let src = self.fetch_u8(memory);
 
@@ -219,13 +216,19 @@ impl CPU {
 
                 let result = a.wrapping_add(b);
 
+                // CF：符号なし整数として桁あふれしたか
                 self.carry_flag = result < a;
+
+                // OF：符号付き整数としてオーバーフローしたか
+                let sign_a = (a & 0x8000_0000) != 0;
+                let sign_b = (b & 0x8000_0000) != 0;
+                let sign_result = (result & 0x8000_0000) != 0;
+
+                self.overflow_flag = (sign_a == sign_b) && (sign_a != sign_result);
 
                 self.registers[dst_index] = result;
 
                 self.update_zero_sign_flags(self.registers[dst_index]);
-
-                // overflow_flagはPhase 12で実装予定
             }
 
             SUB => {
@@ -246,6 +249,12 @@ impl CPU {
                 // 符号なし減算で借りが発生した場合、carry_flag = true
                 // 例: 0 - 1 は u32 では 4294967295 になるので、a < b になる
                 self.carry_flag = a < b;
+
+                let sign_a = (a & 0x8000_0000) != 0;
+                let sign_b = (b & 0x8000_0000) != 0;
+                let sign_result = (result & 0x8000_0000) != 0;
+
+                self.overflow_flag = (sign_a != sign_b) && (sign_a != sign_result);
 
                 self.registers[dst_index] = result;
 
